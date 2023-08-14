@@ -14,6 +14,6 @@ Poniżej zamieszczam kod do stworzenia odpowiedniej bazy danych:
     CREATE TABLE income(id INT(11) NOT NULL AUTO_INCREMENT, name VARCHAR(45), money FLOAT, periodicity TINYINT(4), period_amount INT(11), period_type VARCHAR(45), date DATE, user_id INT(11), PRIMARY KEY (id))
     CREATE TABLE users(user_id INT(11) NOT NULL AUTO_INCREMENT, username VARCHAR(45), password_hash LONGTEXT, PRIMARY KEY (user_id))
 
-Do wygenerowania testowego raportu można użyć linii 298 - 350, które na początku są wykomentowane.
+Do wygenerowania testowego raportu można użyć linii 282 - 334, które na początku są wykomentowane.
 
-W linii 210 załączam czcionkę, która używa polskich znaków. Także należy ją zainstalować (lub użyć innej) i wpisać odpowiednią ścieżkę.
+W linii 194 załączam czcionkę, która używa polskich znaków. Także należy ją zainstalować (lub użyć innej) i wpisać odpowiednią ścieżkę.

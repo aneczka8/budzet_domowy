@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 import os
 
-connection = mysql.connector.connect(user=' *** ', password=' *** ', host=' *** ', database='budzet_domowy')
+connection = mysql.connector.connect(user='root', password='hasłomasło123', host='localhost', database='budzet_domowy')
 cursor = connection.cursor()
 
 def log(username, password):
