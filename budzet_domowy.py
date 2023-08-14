@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 import os
 
-connection = mysql.connector.connect(user=' *** ', password=' *** ', host='localhost', database='budzet_domowy')
+connection = mysql.connector.connect(user='root', password='hasłomasło123', host='localhost', database='budzet_domowy')
 cursor = connection.cursor()
 
 def log(username, password):
@@ -75,7 +75,7 @@ def add_expense(expense):
         cursor.execute(query, values)
     connection.commit()
 
-expense = {'category': '', 'name': '', 'cost': 45.99, 'date': '2023-07-15', 'user_id': 8, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
+expense = {'category': '', 'name': '', 'money': 45.99, 'date': '2023-07-15', 'user_id': 8, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
 
 #add_expense(expense)
 
@@ -110,10 +110,10 @@ def delete_income(income_id):
 def sum_avg(days_amount, user_id, table):
     today = date.today()
     previous_date = today - timedelta(days = days_amount)
-    query = f"SELECT SUM(cost) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
+    query = f"SELECT SUM(money) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
     cursor.execute(query)
     suma = cursor.fetchone()[0]
-    query = f"SELECT AVG(cost) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
+    query = f"SELECT AVG(money) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
     cursor.execute(query)
     avg = cursor.fetchone()[0]
     if avg is not None:
@@ -122,18 +122,18 @@ def sum_avg(days_amount, user_id, table):
         avg = 0.0
     return (suma, avg)
 
-#print(sum_avg(365, 6, expenses))
-#print(sum_avg(60, 6, income))
+#print(sum_avg(365, 6, 'expenses'))
+#print(sum_avg(60, 6, 'income'))
 
 def balance(days_amount, user_id):
-    income  = sum_avg(days_amount, user_id, income)[0]
-    expenses = sum_avg(days_amount, user_id, expenses)[0]
+    income  = sum_avg(days_amount, user_id, 'income')[0]
+    expenses = sum_avg(days_amount, user_id, 'expenses')[0]
     return round(income - expenses, 2)
 
 def sum_category(days_amount, user_id, category):
     today = date.today()
     previous_date = today - timedelta(days = days_amount)
-    query = f"SELECT SUM(cost) FROM expenses WHERE user_id = {user_id} AND category = '{category}' AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
+    query = f"SELECT SUM(money) FROM expenses WHERE user_id = {user_id} AND category = '{category}' AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
     cursor.execute(query)
     suma = cursor.fetchone()[0]
     return suma
@@ -156,13 +156,13 @@ def add_plot(user_id):
         if month == 12:
             month = 0
 
-    expenses.append(sum_avg(day, user_id, expenses)[0])
-    incomes.append(sum_avg(day, user_id, income)[0])
+    expenses.append(sum_avg(day, user_id, 'expenses')[0])
+    incomes.append(sum_avg(day, user_id, 'income')[0])
     balances.append(balance(day, user_id))
     for i in range(1, 13):
-        expenses.append(sum_avg(30*i, user_id, expenses)[0] - sum_avg(day+30*(i-1),user_id, expenses)[0])
-        incomes.append(sum_avg(30*i, user_id, income)[0] - sum_avg(day+30*(i-1),user_id, income)[0])
-        balances.append(balance(30*i, user_id) - balance(day+30*(i-1), user_id))
+        expenses.append(sum_avg(day+30*i, user_id, 'expenses')[0] - sum_avg(day+30*(i-1),user_id, 'expenses')[0])
+        incomes.append(sum_avg(day+30*i, user_id, 'income')[0] - sum_avg(day+30*(i-1),user_id, 'income')[0])
+        balances.append(balance(day+30*i, user_id) - balance(day+30*(i-1), user_id))
 
     expenses.reverse()
     incomes.reverse()
@@ -217,23 +217,23 @@ def generate_raport(user_id, filename, months):
 
     textobject.setFont("DejaVuSans", 12)
     textobject.moveCursor(-400, 20)
-    suma_wplywow = sum_avg(30*months, user_id, income)[0]
-    suma_wydatkow = sum_avg(30*months, user_id, expenses)[0]
+    suma_avg_wplywow = sum_avg(30*months, user_id, 'income')
+    suma_avg_wydatkow = sum_avg(30*months, user_id, 'expenses')
     bilans = balance(30*months, user_id)
     textobject.textLine(text=f"W ciągu {czas}: ")
     textobject.moveCursor(15, 5)
     textobject.textLines(f'''
-        - wpływy wyniosły {suma_wplywow} zł,
-        - wydatki wyniosły {suma_wydatkow} zł,
+        - wpływy wyniosły {suma_avg_wplywow[0]} zł,
+        - wydatki wyniosły {suma_avg_wydatkow[0]} zł,
         - bilans wynosi {bilans} zł.''')
     if months > 1:
         textobject.moveCursor(-15, 5)
         textobject.textLine(text=f"Co daje średnio miesięcznie: ")
         textobject.moveCursor(15, 5)
         textobject.textLines(f'''
-            - wpływy - {round(suma_wplywow/months,2)} zł,
-            - wydatki - {round(suma_wydatkow/months)} zł,
-            - bilans - {round(bilans/months)} zł.''')
+            - wpływy - {round(suma_avg_wplywow[1],2)} zł,
+            - wydatki - {round(suma_avg_wydatkow[1],2)} zł,
+            - bilans - {round(bilans/months,2)} zł.''')
 
     textobject.moveCursor(-15, 10)
     categories = {'jedzenie': 0, 'rozrywka': 0, 'kredyt': 0, 'rachunek': 0, 'leki': 0, 'pies': 0, 'opłaty domowe': 0, 'auto': 0, 'ubrania': 0, 'inne': 0}
@@ -286,51 +286,51 @@ os.remove(f'raport12.pdf')
 # income = {'name': '500plus', 'money': 1000, 'periodicity': True, 'period_amount': 1, 'period_type': 'miesiąc', 'user_id': 11, 'date': '2022-08-17'}
 # add_income(income)
 
-# expense = {'category': 'leki', 'name': 'antyalergiczne, witaminy', 'cost': 120, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'leki', 'name': 'antyalergiczne, witaminy', 'money': 120, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'leki', 'name': '', 'cost': 50, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'leki', 'name': '', 'money': 50, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'filtry, chemia', 'cost': 65, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'opłaty domowe', 'name': 'filtry, chemia', 'money': 65, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'kosmetyki', 'cost': 50, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'opłaty domowe', 'name': 'kosmetyki', 'money': 50, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'zęby', 'cost': 100, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
+# expense = {'category': 'opłaty domowe', 'name': 'zęby', 'money': 100, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'pieluchy', 'cost': 36, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 7, 'period_type': 'dzień'}
+# expense = {'category': 'opłaty domowe', 'name': 'pieluchy', 'money': 36, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 7, 'period_type': 'dzień'}
 # add_expense(expense)
-# expense = {'category': 'rozrywka', 'name': 'basen dzieci', 'cost': 2500, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 6, 'period_type': 'miesiąc'}
+# expense = {'category': 'rozrywka', 'name': 'basen dzieci', 'money': 2500, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 6, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'rozrywka', 'name': 'disneyplus', 'cost': 75, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
+# expense = {'category': 'rozrywka', 'name': 'disneyplus', 'money': 75, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
 # add_expense(expense)
-# expense = {'category': 'pies', 'name': 'karma', 'cost': 270, 'date': '2022-09-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
+# expense = {'category': 'pies', 'name': 'karma', 'money': 270, 'date': '2022-09-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 3, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'pies', 'name': 'przysmaki', 'cost': 3, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'dzień'}
+# expense = {'category': 'pies', 'name': 'przysmaki', 'money': 3, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'dzień'}
 # add_expense(expense)
-# expense = {'category': 'auto', 'name': 'paliwo', 'cost': 400, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'auto', 'name': 'paliwo', 'money': 400, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'auto', 'name': 'przegląd, ubezpieczenie', 'cost': 1200, 'date': '2022-07-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
+# expense = {'category': 'auto', 'name': 'przegląd, ubezpieczenie', 'money': 1200, 'date': '2022-07-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'ubezpieczenia', 'cost': 420, 'date': '2022-09-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
+# expense = {'category': 'opłaty domowe', 'name': 'ubezpieczenia', 'money': 420, 'date': '2022-09-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'rok'}
 # add_expense(expense)
-# expense = {'category': 'inne', 'name': 'studia Andrzeja', 'cost': 2100, 'date': '2022-10-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 6, 'period_type': 'miesiąc'}
+# expense = {'category': 'inne', 'name': 'studia Andrzeja', 'money': 2100, 'date': '2022-10-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 6, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'opłaty domowe', 'name': 'czynsz', 'cost': 620, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'opłaty domowe', 'name': 'czynsz', 'money': 620, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'rachunek', 'name': 'prąd, gaz', 'cost': 500, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'rachunek', 'name': 'prąd, gaz', 'money': 500, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'rachunek', 'name': 'telefon, internet', 'cost': 120, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'rachunek', 'name': 'telefon, internet', 'money': 120, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'rachunek', 'name': 'żłobki', 'cost': 2800, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'rachunek', 'name': 'żłobki', 'money': 2800, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'kredyt', 'name': 'mieszkanie', 'cost': 2300, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'kredyt', 'name': 'mieszkanie', 'money': 2300, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'kredyt', 'name': 'Andrzeja', 'cost': 1700, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'kredyt', 'name': 'Andrzeja', 'money': 1700, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'inne', 'name': 'firma', 'cost': 600, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
+# expense = {'category': 'inne', 'name': 'firma', 'money': 600, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'miesiąc'}
 # add_expense(expense)
-# expense = {'category': 'jedzenie', 'name': 'tygodniowe', 'cost': 300, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 7, 'period_type': 'dzień'}
+# expense = {'category': 'jedzenie', 'name': 'tygodniowe', 'money': 300, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 7, 'period_type': 'dzień'}
 # add_expense(expense)
-# expense = {'category': 'jedzenie', 'name': 'codzienne', 'cost': 35, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'dzień'}
+# expense = {'category': 'jedzenie', 'name': 'codzienne', 'money': 35, 'date': '2022-08-10', 'user_id': 11, 'periodicity': 1, 'period_amount': 1, 'period_type': 'dzień'}
 # add_expense(expense)
 
 connection.close()
