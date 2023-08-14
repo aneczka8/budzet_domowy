@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import math
 import os
 
-connection = mysql.connector.connect(user='root', password='hasłomasło123', host='localhost', database='budzet_domowy')
+connection = mysql.connector.connect(user=' *** ', password=' *** ', host='localhost', database='budzet_domowy')
 cursor = connection.cursor()
 
 def log(username, password):
@@ -107,13 +107,13 @@ def delete_income(income_id):
 
 #delete_income(25)
 
-def sum_avg_expenses(days_amount, user_id):
+def sum_avg(days_amount, user_id, table):
     today = date.today()
     previous_date = today - timedelta(days = days_amount)
-    query = f"SELECT SUM(cost) FROM expenses WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
+    query = f"SELECT SUM(cost) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
     cursor.execute(query)
     suma = cursor.fetchone()[0]
-    query = f"SELECT AVG(cost) FROM expenses WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
+    query = f"SELECT AVG(cost) FROM {table} WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
     cursor.execute(query)
     avg = cursor.fetchone()[0]
     if avg is not None:
@@ -122,28 +122,12 @@ def sum_avg_expenses(days_amount, user_id):
         avg = 0.0
     return (suma, avg)
 
-#print(sum_avg_expenses(365, 6))
-
-def sum_avg_income(days_amount, user_id):
-    today = date.today()
-    previous_date = today - timedelta(days = days_amount)
-    query = f"SELECT SUM(money) FROM income WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
-    cursor.execute(query)
-    suma = cursor.fetchone()[0]
-    query = f"SELECT AVG(money) FROM income WHERE user_id = {user_id} AND date BETWEEN '{str(previous_date)}' AND '{str(today)}'"
-    cursor.execute(query)
-    avg = cursor.fetchone()[0]
-    if avg is not None:
-        avg = round(avg, 2)
-    else:
-        avg = 0.0
-    return (suma, avg)
-
-#print(sum_avg_income(60, 6))
+#print(sum_avg(365, 6, expenses))
+#print(sum_avg(60, 6, income))
 
 def balance(days_amount, user_id):
-    income  = sum_avg_income(days_amount, user_id)[0]
-    expenses = sum_avg_expenses(days_amount, user_id)[0]
+    income  = sum_avg(days_amount, user_id, income)[0]
+    expenses = sum_avg(days_amount, user_id, expenses)[0]
     return round(income - expenses, 2)
 
 def sum_category(days_amount, user_id, category):
@@ -172,12 +156,12 @@ def add_plot(user_id):
         if month == 12:
             month = 0
 
-    expenses.append(sum_avg_expenses(day, user_id)[0])
-    incomes.append(sum_avg_income(day, user_id)[0])
+    expenses.append(sum_avg(day, user_id, expenses)[0])
+    incomes.append(sum_avg(day, user_id, income)[0])
     balances.append(balance(day, user_id))
     for i in range(1, 13):
-        expenses.append(sum_avg_expenses(30*i, user_id)[0] - sum_avg_expenses(day+30*(i-1),user_id)[0])
-        incomes.append(sum_avg_income(30*i, user_id)[0] - sum_avg_income(day+30*(i-1),user_id)[0])
+        expenses.append(sum_avg(30*i, user_id, expenses)[0] - sum_avg(day+30*(i-1),user_id, expenses)[0])
+        incomes.append(sum_avg(30*i, user_id, income)[0] - sum_avg(day+30*(i-1),user_id, income)[0])
         balances.append(balance(30*i, user_id) - balance(day+30*(i-1), user_id))
 
     expenses.reverse()
@@ -233,8 +217,8 @@ def generate_raport(user_id, filename, months):
 
     textobject.setFont("DejaVuSans", 12)
     textobject.moveCursor(-400, 20)
-    suma_wplywow = sum_avg_income(30*months, user_id)[0]
-    suma_wydatkow = sum_avg_expenses(30*months, user_id)[0]
+    suma_wplywow = sum_avg(30*months, user_id, income)[0]
+    suma_wydatkow = sum_avg(30*months, user_id, expenses)[0]
     bilans = balance(30*months, user_id)
     textobject.textLine(text=f"W ciągu {czas}: ")
     textobject.moveCursor(15, 5)
